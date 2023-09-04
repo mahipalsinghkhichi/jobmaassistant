@@ -28,7 +28,6 @@ def transcribe_audio(frames, meetURL, conn):
             audio = recognizer.record(source)
 
         text = recognizer.recognize_google(audio)
-        print(f"Transcription:\n{text}")
 
         cur = conn.cursor()
         # Use placeholders in your SQL query

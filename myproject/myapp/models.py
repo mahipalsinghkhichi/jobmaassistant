@@ -7,14 +7,13 @@ class Item(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField()
 
-
 class Transcript(models.Model):
-    meetIdURl = models.CharField(max_length=100)
+    meetIdUrl = models.CharField(max_length=255)
     script = models.TextField()
-
     def __str__(self):
-        return self.script
-    
+        # return self.script
+        return f"Transcript: {self.script}"
+
 
 class Meet(models.Model):
     meetId = models.CharField(max_length=100)

@@ -58,24 +58,6 @@ def stopRecording(request):
     return Response({'status': 'success', "id": meet.id})
 
 
-# @api_view(['POST'])
-# def getTranscripts(request):
-
-#     meetIdUrl = request.data["meetIdUrl"]
-#     lastTCId = int(request.data["lastTCId"])
-
-#     transcripts = Transcript.objects.filter(id__gt=lastTCId, meetIdURl=meetIdUrl)
-#     if not transcripts.exists():
-#         return Response({'status': 'failed'})
-
-#     data = []
-#     for trans in transcripts.all():
-#             data.append(trans.script)
-    
-#     newLastId = transcripts.last().id
-#     return Response({'status': 'success', "lastId": newLastId, "transcripts": data })
-
-
 @api_view(['POST'])
 def getTranscripts(request):
     meetIdUrl = request.data["meetIdUrl"]

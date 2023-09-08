@@ -4,10 +4,6 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-# from selenium.webdriver.support import expected_conditions as EC
-# from selenium.webdriver.support.ui import WebDriverWait
-# from selenium.webdriver.remote.command import Command
-
 import time
 import sqlite3
 import speech_recognition as sr
@@ -51,7 +47,7 @@ def fillName(driver):
     try:
         # Ask to Join meet
         time.sleep(0.5)
-        driver.implicitly_wait(2000)
+        driver.implicitly_wait(2)
         input_element = driver.find_element(By.XPATH, '/html/body/div/c-wiz/div/div/div[14]/div[3]/div/div[2]/div[4]/div/div/div[2]/div[1]/div[1]/div[3]/label/input')
 
         # Clear the input field (optional, if you want to clear it first)
@@ -64,12 +60,11 @@ def fillName(driver):
         print("Name fill not working..  ", e)
         return False
 
-
 def AskToJoin(driver):
     try:
         # Ask to Join meet
         time.sleep(0.5)
-        driver.implicitly_wait(2000)
+        driver.implicitly_wait(2)
         driver.find_element(By.XPATH,
             '//*[@id="yDmH0d"]/c-wiz/div/div/div[14]/div[3]/div/div[2]/div[4]/div/div/div[2]/div[1]/div[2]/div[1]/div[1]/button').click()
         return True
@@ -77,32 +72,25 @@ def AskToJoin(driver):
         print("Ask to join not working...  ", e)
         return False
     
-# explicit function to turn off mic and cam
-def turnOffMicCam(driver):
+def turnOffCameraAndMic(driver):
     try:
-        # turn off Microphone
+        # Turn off Microphone
         time.sleep(0.5)
         driver.find_element(By.XPATH,
             '//*[@id="yDmH0d"]/c-wiz/div/div/div[14]/div[3]/div/div[2]/div[4]/div/div/div[1]/div[1]/div/div[5]/div[1]/div/div/div[1]').click()
-        driver.implicitly_wait(3000)
+        driver.implicitly_wait(3) 
     
-        # turn off camera
+        # Turn off camera
         time.sleep(0.5)
         driver.find_element(By.XPATH,
             '//*[@id="yDmH0d"]/c-wiz/div/div/div[14]/div[3]/div/div[2]/div[4]/div/div/div[1]/div[1]/div/div[5]/div[2]/div/div[1]').click()
-        driver.implicitly_wait(3000)
+        driver.implicitly_wait(3)
         return True
-    except:
-        print("No able to turn off camera and mic.")
+    except Exception as e:
+        print("Not able to turn off camera and microphone...  ", e)
         return False
 
-
 def create_connection():
-    """ create a database connection to the SQLite database
-        specified by the db_file
-    :param db_file: database file
-    :return: Connection object or None
-    """
     conn = None
     try:
         conn = sqlite3.connect("./../myproject/db.sqlite3")
@@ -114,30 +102,26 @@ def getmeetingUrl(conn, id):
     cur = conn.cursor()
     cur.execute(f"select meetId from myapp_meet where id={id};")
     data = cur.fetchall()
-    if data and len(data)>0 and len(data[0])>0:
+    if data and len(data) > 0 and len(data[0]) > 0:
         return data[0][0]
     else:
         return None
 
 def createDriver():
-    # Set up Chrome options
     chrome_options = Options()
     chrome_options.add_argument("--use-fake-ui-for-media-stream")  # Allow audio capture
     chrome_options.add_argument("--use-fake-device-for-media-stream")
     chrome_options.add_argument('--disable-blink-features=AutomationControlled')
     chrome_options.add_argument('--start-maximized')
     chrome_options.add_experimental_option("prefs", {
-    
         "profile.default_content_setting_values.media_stream_mic": 1,
         "profile.default_content_setting_values.media_stream_camera": 1,
         "profile.default_content_setting_values.geolocation": 0,
         "profile.default_content_setting_values.notifications": 1
     })
-    # Path to ChromeDriver executable
+    
     chromedriver_path = "addingBot/chromedriver.exe"
-    # Initialize Chrome Service
     chrome_service = Service(executable_path=chromedriver_path)
-    # Initialize WebDriver
     driver = webdriver.Chrome(service=chrome_service, options=chrome_options)
     return driver
 
@@ -158,10 +142,9 @@ def isStillRecording(conn, id):
         return False
 
 def startRecording(driver, conn, instanceId, meetURL):
-
     # Wait for the content to load (adjust time as needed)
     time.sleep(5)
-    working = turnOffMicCam(driver)
+    working = turnOffCameraAndMic(driver)
     if not working:
         return
     working = fillName(driver)
@@ -183,9 +166,9 @@ def startRecording(driver, conn, instanceId, meetURL):
         # Start recording
         frames = []
         fiveSecFrames = []
-        isRecroding = isdriverRunning(driver)
+        isRecording = isdriverRunning(driver)
 
-        while isRecroding:
+        while isRecording:
             data = stream.read(1024)
             frames.append(data)
             fiveSecFrames.append(data)
@@ -193,7 +176,7 @@ def startRecording(driver, conn, instanceId, meetURL):
                 transcribe_audio(fiveSecFrames, meetURL, conn)
                 fiveSecFrames = []
                 
-            isRecroding = isStillRecording(conn, instanceId) and isdriverRunning(driver)
+            isRecording = isStillRecording(conn, instanceId) and isdriverRunning(driver)
 
         # Stop recording
         stream.stop_stream()
@@ -210,9 +193,29 @@ def startRecording(driver, conn, instanceId, meetURL):
         # Clean up and close the browser
         driver.quit()
 
+def get_contributor_name_and_caption(driver):
+    try:
+        while True:
+            # Check for captions
+            caption_element = driver.find_element(By.XPATH, '//*[@id="ow3"]/div[1]/div/div[14]/div[3]/div[7]/div[1]/div[1]/div')
+            contributor_name = caption_element.find_element(By.XPATH, '//*[@id="ow3"]/div[1]/div/div[14]/div[3]/div[7]/div[1]/div[1]/div').text
+            caption_text = caption_element.text
+
+            print(f"Contributor: {contributor_name}\nCaption: {caption_text}\n")
+
+            # Wait for a while before checking again (adjust the sleep time as needed)
+            time.sleep(50)
+    except Exception as e:
+        print("Error while fetching captions: ", e)
+        
 def main(instanceId):
     driver = createDriver()
     conn = create_connection()
     meetURL = JointTheMeetAndGetInstanceId(driver, conn, instanceId)
     if instanceId:
         startRecording(driver, conn, instanceId, meetURL)
+        get_contributor_name_and_caption(driver)
+
+if __name__ == "__main__":
+    instance_id = 1  # Replace with your desired instance ID
+    main(instance_id)
